@@ -158,7 +158,21 @@ jobs:
           name: ${{ github.ref_name }}
           draft: false
           prerelease: ${{ contains(github.ref_name, '-') }}
-          generate_release_notes: true
+          body: |
+            ## Installation
+
+            ### macOS
+            1. Download the `.dmg`, open it, and drag **Keymapp Deck** to Applications.
+            2. **First launch:** macOS will block the app because it isn't notarized. Right-click (or Control-click) the app and choose **Open**, then click **Open** in the dialog. You only need to do this once.
+
+            ### Windows
+            Download and run the `.exe` installer.
+
+            ### Stream Deck plugin only
+            Download the `.streamDeckPlugin` file and double-click it to install directly via Stream Deck.
+
+            ---
+            **Requires:** [Keymapp](https://www.zsa.io/keymapp) with API enabled (Keymapp → Settings → Enable API).
           files: |
             release-assets/streamdeck-plugin/*.streamDeckPlugin
             release-assets/mac-dmg/*.dmg
