@@ -1,0 +1,76 @@
+appId: com.ethanthompson.keymapp-layers.installer
+productName: Keymapp Layers
+copyright: Copyright © 2024 Ethan Thompson
+
+# Entry point for the Electron app
+main: installer/main.js
+
+directories:
+  buildResources: build
+  output: dist/installer
+
+# Files included in the app package (installer code only, not the whole repo)
+files:
+  - installer/**/*
+  - package.json
+  - "!node_modules/**"
+  - "!src/**"
+  - "!scripts/**"
+  - "!com.ethanthompson.keymapp-layers.sdPlugin/**"
+  - "!dist/**"
+
+# Bundle the built sdPlugin as an extra resource so main.js can copy it
+extraResources:
+  - from: com.ethanthompson.keymapp-layers.sdPlugin
+    to: plugin
+    filter:
+      - "**/*"
+      - "!bin/*.map"
+
+# ── macOS ──────────────────────────────────────────────────────────────────────
+mac:
+  target:
+    - target: dmg
+      arch:
+        - x64
+        - arm64
+  icon: build/icon.png
+  category: public.app-category.utilities
+  # Disable code signing for unsigned distribution; set these env vars to sign:
+  # CSC_LINK, CSC_KEY_PASSWORD, APPLE_ID, APPLE_APP_SPECIFIC_PASSWORD, APPLE_TEAM_ID
+  identity: null
+
+dmg:
+  title: "Keymapp Layers Installer"
+  background: build/dmg-background.png
+  window:
+    width: 540
+    height: 380
+  contents:
+    - x: 150
+      y: 185
+      type: file
+    - x: 390
+      y: 185
+      type: link
+      path: /Applications
+
+# ── Windows ───────────────────────────────────────────────────────────────────
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  icon: build/icon.png
+
+nsis:
+  oneClick: true
+  perMachine: false
+  allowToChangeInstallationDirectory: false
+  createDesktopShortcut: false
+  createStartMenuShortcut: false
+  deleteAppDataOnUninstall: false
+  # The plugin is installed by the app itself, not the NSIS installer,
+  # so there's nothing meaningful in Program Files to uninstall.
+  # The uninstaller removes the Electron app only; the sdPlugin remains.
+  uninstallDisplayName: "Keymapp Layers (Installer)"

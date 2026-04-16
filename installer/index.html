@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Keymapp Layers — Installer</title>
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+
+      body {
+        background: #151515;
+        color: #e0e0e0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        font-size: 14px;
+        line-height: 1.5;
+        padding: 32px 36px 28px;
+        -webkit-user-select: none;
+        user-select: none;
+        overflow: hidden;
+      }
+
+
+      /* ── logo ──────────────────────────── */
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 28px;
+      }
+      .logo-icon {
+        width: 44px;
+        height: 44px;
+        background: #6c6cff;
+        border-radius: 11px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        flex-shrink: 0;
+      }
+      .logo-text h1 { font-size: 17px; font-weight: 600; color: #fff; }
+      .logo-text p  { font-size: 12px; color: #666; margin-top: 2px; }
+
+      /* ── cards ─────────────────────────── */
+      .card {
+        background: #1e1e1e;
+        border: 1px solid #2a2a2a;
+        border-radius: 10px;
+        padding: 16px 18px;
+        margin-bottom: 14px;
+      }
+
+      /* ── feature list ──────────────────── */
+      .feature-list {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .feature-list li {
+        display: flex;
+        align-items: flex-start;
+        gap: 9px;
+        font-size: 13px;
+        color: #bbb;
+      }
+      .feature-list .icon {
+        font-size: 14px;
+        flex-shrink: 0;
+        margin-top: 1px;
+      }
+
+      /* ── status banners ────────────────── */
+      .status-banner {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        font-size: 12.5px;
+        color: #888;
+        padding: 10px 14px;
+        background: #1a1a1a;
+        border: 1px solid #2a2a2a;
+        border-radius: 8px;
+        margin-bottom: 10px;
+      }
+      .status-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      .status-dot.running { background: #5cb85c; }
+      .status-dot.stopped { background: #888; }
+
+      /* ── keymapp status card ───────────── */
+      .keymapp-card {
+        background: #1e1e1e;
+        border: 1px solid #2a2a2a;
+        border-radius: 8px;
+        padding: 12px 14px;
+        margin-bottom: 10px;
+      }
+      .keymapp-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 8px;
+      }
+      .keymapp-card-title {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        color: #555;
+      }
+      .btn-retest {
+        background: none;
+        border: 1px solid #333;
+        border-radius: 4px;
+        color: #666;
+        font-size: 11px;
+        padding: 2px 8px;
+        cursor: pointer;
+        transition: color 0.15s, border-color 0.15s;
+      }
+      .btn-retest:hover { color: #aaa; border-color: #555; }
+      .btn-retest:disabled { opacity: 0.4; cursor: default; }
+
+      .keymapp-status {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        font-size: 12.5px;
+      }
+      .keymapp-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #444;
+        flex-shrink: 0;
+        margin-top: 4px;
+        transition: background 0.2s;
+      }
+      .keymapp-dot.ok      { background: #5cb85c; }
+      .keymapp-dot.fail    { background: #d9534f; }
+      .keymapp-dot.pending { background: #888; animation: pulse 1s ease-in-out infinite; }
+      @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+      .keymapp-msg { color: #888; line-height: 1.4; flex: 1; }
+      .keymapp-msg.ok   { color: #c8e6c9; }
+      .keymapp-msg.fail { color: #ef9a9a; }
+
+      /* ── buttons ───────────────────────── */
+      .btn {
+        display: block;
+        width: 100%;
+        padding: 11px;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.15s, opacity 0.15s;
+      }
+      .btn:disabled { opacity: 0.35; cursor: default; }
+      .btn-primary { background: #6c6cff; color: #fff; }
+      .btn-primary:not(:disabled):hover { background: #5959e0; }
+      .btn-secondary { background: #252525; color: #bbb; margin-top: 9px; }
+      .btn-secondary:not(:disabled):hover { background: #303030; }
+
+      /* ── progress / steps ──────────────── */
+      .progress-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 12px;
+      }
+      .spinner {
+        width: 16px;
+        height: 16px;
+        border: 2px solid #333;
+        border-top-color: #6c6cff;
+        border-radius: 50%;
+        animation: spin 0.7s linear infinite;
+        flex-shrink: 0;
+      }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      .spinner.done  { border-color: #5cb85c; border-top-color: #5cb85c; animation: none; }
+      .spinner.error { border-color: #d9534f; border-top-color: #d9534f; animation: none; }
+      .progress-label { font-size: 13px; color: #aaa; }
+
+      .steps { list-style: none; }
+      .step {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        padding: 5px 0;
+        font-size: 12.5px;
+        color: #ccc;
+        border-bottom: 1px solid #262626;
+        animation: fadeIn 0.18s ease;
+      }
+      .step:last-child { border-bottom: none; }
+      @keyframes fadeIn { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
+      .step-ok   { color: #5cb85c; width: 18px; text-align: center; flex-shrink: 0; }
+      .step-fail { color: #d9534f; width: 18px; text-align: center; flex-shrink: 0; }
+
+      .error-box {
+        background: #200f0f;
+        border: 1px solid #4a1a1a;
+        border-radius: 7px;
+        padding: 10px 12px;
+        font-size: 12px;
+        color: #d9534f;
+        margin-top: 12px;
+        word-break: break-word;
+        line-height: 1.5;
+      }
+
+      /* ── done screen ───────────────────── */
+      .done-view { text-align: center; padding: 16px 0 8px; }
+      .done-icon { font-size: 44px; margin-bottom: 14px; }
+      .done-view h2 { font-size: 19px; font-weight: 600; color: #fff; margin-bottom: 8px; }
+      .done-view p  { font-size: 12.5px; color: #777; line-height: 1.6; max-width: 320px; margin: 0 auto; }
+
+      /* ── screen visibility ─────────────── */
+      .screen { display: none; }
+      .screen.active { display: block; }
+    </style>
+  </head>
+  <body>
+    <div class="logo">
+      <div class="logo-icon">⌨</div>
+      <div class="logo-text">
+        <h1>Keymapp Layers</h1>
+        <p>Stream Deck Plugin Installer</p>
+      </div>
+    </div>
+
+    <!-- ── Welcome ──────────────────────────────────────────── -->
+    <div id="screen-welcome" class="screen">
+      <div class="card">
+        <ul class="feature-list">
+          <li>
+            <span class="icon">🎹</span>
+            <span>Adds a <strong>Set Layer</strong> action to Stream Deck — drag it onto any key and pick which keyboard layer to activate.</span>
+          </li>
+          <li>
+            <span class="icon">📦</span>
+            <span>Includes the <strong>kontroll</strong> CLI binary. No separate install needed.</span>
+          </li>
+          <li>
+            <span class="icon">🔌</span>
+            <span>Requires <strong>Keymapp</strong> to be running. After installing, open Keymapp → <strong>Settings → Enable API</strong> before using the action.</span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Keymapp connection status -->
+      <div class="keymapp-card">
+        <div class="keymapp-card-header">
+          <span class="keymapp-card-title">Keymapp Connection</span>
+          <button class="btn-retest" id="btn-retest" disabled>Retest</button>
+        </div>
+        <div class="keymapp-status">
+          <div class="keymapp-dot pending" id="keymapp-dot"></div>
+          <span class="keymapp-msg" id="keymapp-msg">Checking…</span>
+        </div>
+      </div>
+
+      <!-- Stream Deck status -->
+      <div class="status-banner" id="sd-banner">
+        <div class="status-dot stopped" id="sd-dot"></div>
+        <span id="sd-text">Checking Stream Deck…</span>
+      </div>
+
+      <button class="btn btn-primary" id="btn-install">Install Plugin</button>
+    </div>
+
+    <!-- ── Installing ───────────────────────────────────────── -->
+    <div id="screen-install" class="screen">
+      <div class="card">
+        <div class="progress-header">
+          <div class="spinner" id="spinner"></div>
+          <span class="progress-label" id="progress-label">Installing…</span>
+        </div>
+        <ul class="steps" id="step-list"></ul>
+      </div>
+      <div class="error-box" id="error-box" style="display:none"></div>
+    </div>
+
+    <!-- ── Done ─────────────────────────────────────────────── -->
+    <div id="screen-done" class="screen">
+      <div class="done-view">
+        <div class="done-icon">✅</div>
+        <h2>Plugin Installed</h2>
+        <p>Open Stream Deck and drag the <strong>Set Layer</strong> action onto a key. Pick a layer from the dropdown in the settings panel on the right.</p>
+      </div>
+      <button class="btn btn-primary" id="btn-open-sd" style="margin-top:24px">Open Stream Deck</button>
+      <button class="btn btn-secondary" id="btn-close">Close</button>
+    </div>
+
+    <script>
+      "use strict";
+
+      // ── helpers ────────────────────────────────────────────
+      function show(id) {
+        document.querySelectorAll(".screen").forEach((el) => el.classList.remove("active"));
+        document.getElementById(id).classList.add("active");
+      }
+
+      function addStep(label, ok) {
+        const li = document.createElement("li");
+        li.className = "step";
+        const icon = document.createElement("span");
+        icon.className = ok ? "step-ok" : "step-fail";
+        icon.textContent = ok ? "✓" : "✗";
+        const text = document.createElement("span");
+        text.textContent = label;
+        li.append(icon, text);
+        document.getElementById("step-list").appendChild(li);
+      }
+
+      // Show the welcome screen immediately — before any code that could throw.
+      show("screen-welcome");
+
+      // macOS title-bar spacer.
+      // ── wire up installer API ──────────────────────────────
+      const api = window.installer;
+
+      if (!api) {
+        document.getElementById("sd-text").textContent =
+          "Installer backend unavailable. Try re-running npm run installer:dev.";
+      } else {
+        // Populate Stream Deck status.
+        api.getInfo().then((info) => {
+          const running = info.streamDeckRunning;
+          document.getElementById("sd-dot").className =
+            "status-dot " + (running ? "running" : "stopped");
+          document.getElementById("sd-text").textContent = running
+            ? "Stream Deck is running — it will be restarted automatically."
+            : "Stream Deck is not running — it will be opened after install.";
+        }).catch(() => {
+          document.getElementById("sd-text").textContent = "Could not detect Stream Deck status.";
+        });
+
+        // Test Keymapp connection — runs automatically on load, retryable.
+        function runKeymappTest() {
+          const dot = document.getElementById("keymapp-dot");
+          const msg = document.getElementById("keymapp-msg");
+          const btn = document.getElementById("btn-retest");
+          dot.className = "keymapp-dot pending";
+          msg.className = "keymapp-msg";
+          msg.textContent = "Checking…";
+          btn.disabled = true;
+
+          api.testKontroll().then((result) => {
+            dot.className = "keymapp-dot " + (result.ok ? "ok" : "fail");
+            msg.className = "keymapp-msg " + (result.ok ? "ok" : "fail");
+            msg.textContent = result.message;
+            btn.disabled = false;
+          }).catch(() => {
+            dot.className = "keymapp-dot fail";
+            msg.className = "keymapp-msg fail";
+            msg.textContent = "Test failed unexpectedly.";
+            btn.disabled = false;
+          });
+        }
+
+        document.getElementById("btn-retest").addEventListener("click", runKeymappTest);
+        runKeymappTest();
+
+        // Live step feed from main.
+        api.onStep((step) => addStep(step.label, step.ok));
+
+        // Install button.
+        document.getElementById("btn-install").addEventListener("click", async () => {
+          document.getElementById("step-list").innerHTML = "";
+          document.getElementById("error-box").style.display = "none";
+          document.getElementById("spinner").className = "spinner";
+          document.getElementById("progress-label").textContent = "Installing…";
+          show("screen-install");
+
+          let result;
+          try {
+            result = await api.install({ restartStreamDeck: true });
+          } catch (err) {
+            result = { success: false, error: String(err) };
+          }
+
+          const spinner = document.getElementById("spinner");
+          if (result.success) {
+            spinner.className = "spinner done";
+            document.getElementById("progress-label").textContent = "Installation complete";
+            setTimeout(() => show("screen-done"), 700);
+          } else {
+            spinner.className = "spinner error";
+            document.getElementById("progress-label").textContent = "Installation failed";
+            const errBox = document.getElementById("error-box");
+            errBox.textContent =
+              result.error || "An unexpected error occurred. Make sure Stream Deck is installed and try again.";
+            errBox.style.display = "block";
+          }
+        });
+
+        document.getElementById("btn-open-sd").addEventListener("click", () => api.openStreamDeck());
+        document.getElementById("btn-close").addEventListener("click", () => window.close());
+      }
+    </script>
+  </body>
+</html>

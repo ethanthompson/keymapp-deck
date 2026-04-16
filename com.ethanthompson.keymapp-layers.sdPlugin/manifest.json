@@ -1,0 +1,47 @@
+{
+  "$schema": "https://schemas.elgato.com/streamdeck/plugins/manifest.json",
+  "Name": "Keymapp Layers",
+  "Version": "1.0.0.0",
+  "Author": "Ethan Thompson",
+  "Description": "Switch your ZSA keyboard to a specific layer directly from your Stream Deck. Requires Keymapp and the kontroll CLI.",
+  "Category": "Keymapp Layers",
+  "CategoryIcon": "imgs/plugin/category",
+  "Icon": "imgs/plugin/icon",
+  "CodePath": "bin/plugin.js",
+  "SDKVersion": 2,
+  "Software": {
+    "MinimumVersion": "6.7"
+  },
+  "OS": [
+    {
+      "Platform": "mac",
+      "MinimumVersion": "10.15"
+    },
+    {
+      "Platform": "windows",
+      "MinimumVersion": "10"
+    }
+  ],
+  "Nodejs": {
+    "Version": "20",
+    "Debug": "enabled"
+  },
+  "UUID": "com.ethanthompson.keymapp-layers",
+  "Actions": [
+    {
+      "Name": "Set Layer",
+      "UUID": "com.ethanthompson.keymapp-layers.set-layer",
+      "Icon": "imgs/actions/set-layer/key",
+      "Tooltip": "Switch your ZSA keyboard to a specific layer",
+      "Controllers": ["Keypad", "Encoder"],
+      "States": [
+        {
+          "Image": "imgs/actions/set-layer/key",
+          "TitleAlignment": "middle"
+        }
+      ],
+      "PropertyInspectorPath": "ui/set-layer.html",
+      "DisableCaching": false
+    }
+  ]
+}

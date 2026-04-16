@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Set Layer</title>
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+
+      body {
+        background: #1d1d1d;
+        color: #d8d8d8;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        font-size: 13px;
+        padding: 12px;
+      }
+
+      .row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+
+      .row label {
+        width: 86px;
+        flex-shrink: 0;
+        color: #888;
+        text-align: right;
+        font-size: 12px;
+      }
+
+      .row input[type="number"] {
+        flex: 1;
+        background: #2d2d2d;
+        border: 1px solid #3d3d3d;
+        border-radius: 4px;
+        color: #d8d8d8;
+        font-size: 13px;
+        height: 26px;
+        padding: 0 8px;
+        outline: none;
+        transition: border-color 0.15s;
+      }
+      .row input:focus { border-color: #6c6cff; }
+
+      .divider {
+        border: none;
+        border-top: 1px solid #2d2d2d;
+        margin: 12px 0;
+      }
+
+      .section-label {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        color: #555;
+        padding-left: 96px;
+        margin-bottom: 10px;
+      }
+
+      .row input[type="text"] {
+        flex: 1;
+        background: #2d2d2d;
+        border: 1px solid #3d3d3d;
+        border-radius: 4px;
+        color: #d8d8d8;
+        font-size: 13px;
+        height: 26px;
+        padding: 0 8px;
+        outline: none;
+        transition: border-color 0.15s;
+      }
+
+      .hint {
+        color: #555;
+        font-size: 11px;
+        line-height: 1.5;
+        padding-left: 96px;
+        margin-top: -6px;
+        margin-bottom: 10px;
+      }
+
+    </style>
+  </head>
+  <body>
+
+    <div class="row">
+      <label for="layer">Layer</label>
+      <input type="number" id="layer" min="0" max="99" value="0" placeholder="0" />
+    </div>
+
+    <hr class="divider" />
+    <p class="section-label">Advanced</p>
+
+    <div class="row">
+      <label for="kontrollPath">CLI path</label>
+      <input type="text" id="kontrollPath" placeholder="Auto-detect" spellcheck="false" autocomplete="off" />
+    </div>
+    <p class="hint">Leave blank to use the bundled binary.</p>
+
+
+    <script>
+      "use strict";
+
+      let websocket = null;
+      let actionContext = null;
+      let actionUUID = null;
+      let settings = {};
+
+      function connectElgatoStreamDeckSocket(port, uuid, registerEvent, info, actionInfo) {
+        actionUUID = uuid;
+        const parsed = JSON.parse(actionInfo);
+        actionContext = parsed.context;
+        settings = Object.assign({ layer: 0 }, parsed.payload?.settings ?? {});
+        applyToUI(settings);
+
+        websocket = new WebSocket(`ws://127.0.0.1:${port}`);
+        websocket.onopen = () => {
+          websocket.send(JSON.stringify({ event: registerEvent, uuid: actionUUID }));
+        };
+        websocket.onmessage = (ev) => {
+          try {
+            const data = JSON.parse(ev.data);
+            if (data.event === "didReceiveSettings" && data.context === actionContext) {
+              settings = Object.assign({ layer: 0 }, data.payload?.settings ?? {});
+              applyToUI(settings);
+            }
+          } catch (_) {}
+        };
+      }
+
+      function applyToUI(s) {
+        document.getElementById("layer").value = s.layer ?? 0;
+        document.getElementById("kontrollPath").value = s.kontrollPath ?? "";
+      }
+
+      function save() {
+        if (!websocket || websocket.readyState !== WebSocket.OPEN) return;
+        const layer = Math.max(0, parseInt(document.getElementById("layer").value, 10) || 0);
+        const kontrollPath = document.getElementById("kontrollPath").value.trim() || undefined;
+        settings = { layer, kontrollPath };
+
+        websocket.send(JSON.stringify({ event: "setSettings", context: actionContext, payload: settings }));
+        websocket.send(JSON.stringify({
+          event: "sendToPlugin",
+          context: actionContext,
+          action: "com.ethanthompson.keymapp-layers.set-layer",
+          payload: { event: "settingsUpdated", ...settings },
+        }));
+      }
+
+      document.getElementById("layer").addEventListener("change", save);
+      document.getElementById("kontrollPath").addEventListener("change", save);
+    </script>
+  </body>
+</html>
