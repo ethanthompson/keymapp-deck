@@ -2,6 +2,7 @@
   "name": "com.ethanthompson.keymapp-layers",
   "version": "1.0.0",
   "description": "Switch ZSA keyboard layers from Stream Deck",
+  "author": "Ethan Thompson",
   "main": "installer/main.js",
   "scripts": {
     "build": "rollup --config rollup.config.mjs",

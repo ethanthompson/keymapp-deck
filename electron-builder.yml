@@ -2,9 +2,6 @@ appId: com.ethanthompson.keymapp-layers.installer
 productName: Keymapp Deck
 copyright: Copyright © 2024 Ethan Thompson
 
-# Entry point for the Electron app
-main: installer/main.js
-
 directories:
   buildResources: build
   output: dist/installer
