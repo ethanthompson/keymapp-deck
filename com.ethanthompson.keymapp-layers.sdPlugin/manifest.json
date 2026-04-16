@@ -1,10 +1,10 @@
 {
   "$schema": "https://schemas.elgato.com/streamdeck/plugins/manifest.json",
-  "Name": "Keymapp Layers",
+  "Name": "Keymapp Deck",
   "Version": "1.0.0.0",
   "Author": "Ethan Thompson",
-  "Description": "Switch your ZSA keyboard to a specific layer directly from your Stream Deck. Requires Keymapp and the kontroll CLI.",
-  "Category": "Keymapp Layers",
+  "Description": "Switch your ZSA keyboard to a specific layer directly from your Stream Deck. Requires Keymapp with API enabled.",
+  "Category": "Keymapp Deck",
   "CategoryIcon": "imgs/plugin/category",
   "Icon": "imgs/plugin/icon",
   "CodePath": "bin/plugin.js",

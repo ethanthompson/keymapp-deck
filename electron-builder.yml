@@ -1,5 +1,5 @@
 appId: com.ethanthompson.keymapp-layers.installer
-productName: Keymapp Layers
+productName: Keymapp Deck
 copyright: Copyright © 2024 Ethan Thompson
 
 # Entry point for the Electron app
@@ -41,7 +41,7 @@ mac:
   identity: null
 
 dmg:
-  title: "Keymapp Layers Installer"
+  title: "Keymapp Deck Installer"
   background: build/dmg-background.png
   window:
     width: 540
@@ -73,4 +73,4 @@ nsis:
   # The plugin is installed by the app itself, not the NSIS installer,
   # so there's nothing meaningful in Program Files to uninstall.
   # The uninstaller removes the Electron app only; the sdPlugin remains.
-  uninstallDisplayName: "Keymapp Layers (Installer)"
+  uninstallDisplayName: "Keymapp Deck (Installer)"
