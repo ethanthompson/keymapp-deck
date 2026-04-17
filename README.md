@@ -6,6 +6,8 @@ A Stream Deck plugin that lets you switch your ZSA keyboard to any layer with a 
 
 Each Stream Deck key can be configured to activate a specific layer on your ZSA keyboard (Moonlander, Voyager, ErgoDox EZ, etc.). Press the key, the layer switches instantly. The key label updates to show which layer it's assigned to.
 
+![keymapp-deck](keymapp-deck.png)
+
 ## Requirements
 
 - A ZSA keyboard (Moonlander, Voyager, ErgoDox EZ)
