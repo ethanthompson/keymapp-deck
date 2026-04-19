@@ -4,7 +4,7 @@ const { app, BrowserWindow, ipcMain } = require("electron");
 const path = require("path");
 const fs = require("fs");
 const os = require("os");
-const { execFile, execFileSync, execFile: execFileRaw } = require("child_process");
+const { execFile, execFileSync, execFile: execFileRaw, spawn } = require("child_process");
 const { promisify } = require("util");
 const execFileAsync = promisify(execFileRaw);
 
@@ -111,7 +111,9 @@ function startStreamDeck() {
     ];
     for (const p of candidates) {
       if (fs.existsSync(p)) {
-        execFile(p);
+        // detached + unref so Stream Deck outlives the installer process
+        const child = spawn(p, [], { detached: true, stdio: "ignore" });
+        child.unref();
         break;
       }
     }

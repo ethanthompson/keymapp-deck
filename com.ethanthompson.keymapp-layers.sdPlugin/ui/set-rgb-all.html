@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Set Layer</title>
+    <title>Set RGB (All Keys)</title>
     <style>
       * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -30,19 +30,39 @@
         font-size: 12px;
       }
 
-      .row input[type="number"] {
+      .color-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex: 1;
+      }
+
+      input[type="color"] {
+        width: 40px;
+        height: 26px;
+        border: 1px solid #3d3d3d;
+        border-radius: 4px;
+        background: #2d2d2d;
+        cursor: pointer;
+        padding: 2px;
+        flex-shrink: 0;
+      }
+
+      input[type="text"].hex-input {
         flex: 1;
         background: #2d2d2d;
         border: 1px solid #3d3d3d;
         border-radius: 4px;
         color: #d8d8d8;
         font-size: 13px;
+        font-family: monospace;
         height: 26px;
         padding: 0 8px;
         outline: none;
         transition: border-color 0.15s;
+        text-transform: uppercase;
       }
-      .row input:focus { border-color: #6c6cff; }
+      input[type="text"].hex-input:focus { border-color: #6c6cff; }
 
       .divider {
         border: none;
@@ -60,7 +80,7 @@
         margin-bottom: 10px;
       }
 
-      .row input[type="text"] {
+      .row input[type="text"].path-input {
         flex: 1;
         background: #2d2d2d;
         border: 1px solid #3d3d3d;
@@ -72,6 +92,7 @@
         outline: none;
         transition: border-color 0.15s;
       }
+      .row input[type="text"].path-input:focus { border-color: #6c6cff; }
 
       .hint {
         color: #555;
@@ -81,14 +102,16 @@
         margin-top: -6px;
         margin-bottom: 10px;
       }
-
     </style>
   </head>
   <body>
 
     <div class="row">
-      <label for="layer">Layer</label>
-      <input type="number" id="layer" min="0" max="99" value="0" placeholder="0" />
+      <label for="colorPicker">Color</label>
+      <div class="color-row">
+        <input type="color" id="colorPicker" value="#ffffff" />
+        <input type="text" id="hexInput" class="hex-input" maxlength="7" value="#FFFFFF" spellcheck="false" autocomplete="off" />
+      </div>
     </div>
 
     <hr class="divider" />
@@ -96,66 +119,80 @@
 
     <div class="row">
       <label for="kontrollPath">CLI path</label>
-      <input type="text" id="kontrollPath" placeholder="Auto-detect" spellcheck="false" autocomplete="off" />
+      <input type="text" id="kontrollPath" class="path-input" placeholder="Auto-detect" spellcheck="false" autocomplete="off" />
     </div>
     <p class="hint">Leave blank to use the bundled binary.</p>
-
 
     <script>
       "use strict";
 
-      let websocket     = null;
+      let websocket = null;
       let actionContext = null;
-      let actionUUID    = null;
-      let settings      = {};
-      // Prevent the getSettings response from overwriting values the user
-      // has already edited during this PI session.
-      let hasEdited     = false;
+      let actionUUID = null;
+      let settings = {};
 
       function connectElgatoStreamDeckSocket(port, uuid, registerEvent, info, actionInfo) {
-        actionUUID    = uuid;
-        const parsed  = JSON.parse(actionInfo);
+        actionUUID = uuid;
+        const parsed = JSON.parse(actionInfo);
         actionContext = parsed.context;
-        hasEdited     = false;
-        settings      = Object.assign({ layer: 0 }, parsed.payload?.settings ?? {});
+        settings = Object.assign({ color: "FFFFFF" }, parsed.payload?.settings ?? {});
         applyToUI(settings);
 
         websocket = new WebSocket(`ws://127.0.0.1:${port}`);
-
         websocket.onopen = () => {
           websocket.send(JSON.stringify({ event: registerEvent, uuid: actionUUID }));
           websocket.send(JSON.stringify({ event: "getSettings", context: actionUUID }));
         };
-
         websocket.onmessage = (ev) => {
           try {
             const data = JSON.parse(ev.data);
             if (data.event === "didReceiveSettings") {
-              if (!hasEdited) {
-                settings = Object.assign({ layer: 0 }, data.payload?.settings ?? {});
-                applyToUI(settings);
-              }
+              settings = Object.assign({ color: "FFFFFF" }, data.payload?.settings ?? {});
+              applyToUI(settings);
             }
           } catch (_) {}
         };
       }
 
+      function normalizeToPickerHex(color) {
+        const bare = color.replace(/^#/, "");
+        return "#" + bare.toUpperCase().padEnd(6, "0").slice(0, 6);
+      }
+
       function applyToUI(s) {
-        document.getElementById("layer").value        = s.layer ?? 0;
+        const hex = normalizeToPickerHex(s.color || "FFFFFF");
+        document.getElementById("colorPicker").value = hex.toLowerCase();
+        document.getElementById("hexInput").value = hex;
         document.getElementById("kontrollPath").value = s.kontrollPath ?? "";
+      }
+
+      function isValidHex(str) {
+        return /^#?[0-9A-Fa-f]{6}$/.test(str.trim());
       }
 
       function save() {
         if (!websocket || websocket.readyState !== WebSocket.OPEN) return;
-        hasEdited = true;
-        const layer        = Math.max(0, parseInt(document.getElementById("layer").value, 10) || 0);
+        const color = document.getElementById("hexInput").value.replace(/^#/, "").toUpperCase() || "FFFFFF";
         const kontrollPath = document.getElementById("kontrollPath").value.trim() || undefined;
-        settings = { layer, kontrollPath };
+        settings = { color, kontrollPath };
         websocket.send(JSON.stringify({ event: "setSettings", context: actionUUID, payload: settings }));
       }
 
-      document.getElementById("layer").addEventListener("input",  save);
-      document.getElementById("layer").addEventListener("change", save);
+      document.getElementById("colorPicker").addEventListener("input", (e) => {
+        const hex = e.target.value.toUpperCase();
+        document.getElementById("hexInput").value = hex;
+        save();
+      });
+
+      document.getElementById("hexInput").addEventListener("change", (e) => {
+        const raw = e.target.value.trim();
+        if (!isValidHex(raw)) return;
+        const hex = normalizeToPickerHex(raw);
+        document.getElementById("colorPicker").value = hex.toLowerCase();
+        document.getElementById("hexInput").value = hex;
+        save();
+      });
+
       document.getElementById("kontrollPath").addEventListener("change", save);
     </script>
   </body>

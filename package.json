@@ -1,6 +1,6 @@
 {
   "name": "com.ethanthompson.keymapp-layers",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Switch ZSA keyboard layers from Stream Deck",
   "author": "Ethan Thompson",
   "main": "installer/main.js",

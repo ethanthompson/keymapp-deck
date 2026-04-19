@@ -24,13 +24,21 @@ const pkg = JSON.parse(readFileSync(path.join(ROOT, "package.json"), "utf8"));
 console.log(`Packaging ${PLUGIN_DIR} v${pkg.version}…`);
 
 // Use system zip (macOS/Linux) or PowerShell Compress-Archive (Windows).
+// PowerShell's Compress-Archive only accepts .zip; we zip first then rename.
 if (process.platform === "win32") {
+  const tmpZip = OUT_FILE.replace(/\.streamDeckPlugin$/, ".zip");
   execFileSync(
     "powershell",
     [
       "-Command",
-      `Compress-Archive -Force -Path "${path.join(ROOT, PLUGIN_DIR)}" -DestinationPath "${OUT_FILE}"`,
+      `Compress-Archive -Force -Path "${path.join(ROOT, PLUGIN_DIR)}" -DestinationPath "${tmpZip}"`,
     ],
+    { stdio: "inherit", cwd: ROOT }
+  );
+  // Rename .zip → .streamDeckPlugin
+  execFileSync(
+    "powershell",
+    ["-Command", `Move-Item -Force -Path "${tmpZip}" -Destination "${OUT_FILE}"`],
     { stdio: "inherit", cwd: ROOT }
   );
 } else {

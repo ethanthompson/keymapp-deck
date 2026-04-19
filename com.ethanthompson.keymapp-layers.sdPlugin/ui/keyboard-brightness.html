@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Set Layer</title>
+    <title>Keyboard Brightness</title>
     <style>
       * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -29,20 +29,6 @@
         text-align: right;
         font-size: 12px;
       }
-
-      .row input[type="number"] {
-        flex: 1;
-        background: #2d2d2d;
-        border: 1px solid #3d3d3d;
-        border-radius: 4px;
-        color: #d8d8d8;
-        font-size: 13px;
-        height: 26px;
-        padding: 0 8px;
-        outline: none;
-        transition: border-color 0.15s;
-      }
-      .row input:focus { border-color: #6c6cff; }
 
       .divider {
         border: none;
@@ -72,6 +58,7 @@
         outline: none;
         transition: border-color 0.15s;
       }
+      .row input:focus { border-color: #6c6cff; }
 
       .hint {
         color: #555;
@@ -81,15 +68,9 @@
         margin-top: -6px;
         margin-bottom: 10px;
       }
-
     </style>
   </head>
   <body>
-
-    <div class="row">
-      <label for="layer">Layer</label>
-      <input type="number" id="layer" min="0" max="99" value="0" placeholder="0" />
-    </div>
 
     <hr class="divider" />
     <p class="section-label">Advanced</p>
@@ -100,62 +81,50 @@
     </div>
     <p class="hint">Leave blank to use the bundled binary.</p>
 
-
     <script>
       "use strict";
 
-      let websocket     = null;
+      let websocket = null;
       let actionContext = null;
-      let actionUUID    = null;
-      let settings      = {};
-      // Prevent the getSettings response from overwriting values the user
-      // has already edited during this PI session.
-      let hasEdited     = false;
+      let actionUUID = null;
+      let actionId = null;
+      let settings = {};
 
       function connectElgatoStreamDeckSocket(port, uuid, registerEvent, info, actionInfo) {
-        actionUUID    = uuid;
-        const parsed  = JSON.parse(actionInfo);
+        actionUUID = uuid;
+        const parsed = JSON.parse(actionInfo);
         actionContext = parsed.context;
-        hasEdited     = false;
-        settings      = Object.assign({ layer: 0 }, parsed.payload?.settings ?? {});
+        actionId = parsed.action;
+        settings = Object.assign({}, parsed.payload?.settings ?? {});
         applyToUI(settings);
 
         websocket = new WebSocket(`ws://127.0.0.1:${port}`);
-
         websocket.onopen = () => {
           websocket.send(JSON.stringify({ event: registerEvent, uuid: actionUUID }));
           websocket.send(JSON.stringify({ event: "getSettings", context: actionUUID }));
         };
-
         websocket.onmessage = (ev) => {
           try {
             const data = JSON.parse(ev.data);
             if (data.event === "didReceiveSettings") {
-              if (!hasEdited) {
-                settings = Object.assign({ layer: 0 }, data.payload?.settings ?? {});
-                applyToUI(settings);
-              }
+              settings = Object.assign({}, data.payload?.settings ?? {});
+              applyToUI(settings);
             }
           } catch (_) {}
         };
       }
 
       function applyToUI(s) {
-        document.getElementById("layer").value        = s.layer ?? 0;
         document.getElementById("kontrollPath").value = s.kontrollPath ?? "";
       }
 
       function save() {
         if (!websocket || websocket.readyState !== WebSocket.OPEN) return;
-        hasEdited = true;
-        const layer        = Math.max(0, parseInt(document.getElementById("layer").value, 10) || 0);
         const kontrollPath = document.getElementById("kontrollPath").value.trim() || undefined;
-        settings = { layer, kontrollPath };
+        settings = { kontrollPath };
         websocket.send(JSON.stringify({ event: "setSettings", context: actionUUID, payload: settings }));
       }
 
-      document.getElementById("layer").addEventListener("input",  save);
-      document.getElementById("layer").addEventListener("change", save);
       document.getElementById("kontrollPath").addEventListener("change", save);
     </script>
   </body>

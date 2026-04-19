@@ -1,10 +1,8 @@
 import streamDeck, {
   action,
-  DidReceiveSettingsEvent,
   KeyDownEvent,
   SendToPluginEvent,
   SingletonAction,
-  WillAppearEvent,
 } from "@elgato/streamdeck";
 import type { JsonValue } from "@elgato/utils";
 import { execFile } from "child_process";
@@ -15,11 +13,9 @@ import path from "path";
 
 const execFileAsync = promisify(execFile);
 
-// Any kontroll call that takes longer than this means Keymapp isn't reachable.
 const KONTROLL_TIMEOUT_MS = 6000;
 
 type Settings = {
-  layer: number;
   kontrollPath?: string;
 };
 
@@ -76,49 +72,30 @@ function friendlyError(err: unknown): string {
   return msg;
 }
 
-async function setLayer(binary: string, layer: number): Promise<void> {
-  const args = ["set-layer", "--index", String(layer)];
+async function runBrightnessCommand(binary: string, command: "increase-brightness" | "decrease-brightness"): Promise<void> {
   try {
-    // Try directly — works when Keymapp already has a keyboard active (the common case).
-    await execFileAsync(binary, args, { timeout: KONTROLL_TIMEOUT_MS });
+    await execFileAsync(binary, [command], { timeout: KONTROLL_TIMEOUT_MS });
   } catch (directErr) {
     const msg = directErr instanceof Error ? directErr.message : String(directErr);
-    // If the error is "not connected" / no keyboard selected, try connecting first.
     const needsConnect =
       msg.includes("not connected") ||
       msg.includes("No keyboard") ||
       msg.includes("no keyboard");
-    if (!needsConnect) throw directErr; // Some other error — surface it.
+    if (!needsConnect) throw directErr;
 
-    // connect-any exits 1 if a keyboard is already connected, so ignore that exit code.
     try {
       await execFileAsync(binary, ["connect-any"], { timeout: KONTROLL_TIMEOUT_MS });
     } catch {
       // "keyboard already connected" exits 1 — that's fine, proceed anyway.
     }
-    // Retry set-layer after connecting.
-    await execFileAsync(binary, args, { timeout: KONTROLL_TIMEOUT_MS });
+    await execFileAsync(binary, [command], { timeout: KONTROLL_TIMEOUT_MS });
   }
 }
 
-@action({ UUID: "com.ethanthompson.keymapp-layers.set-layer" })
-export class SetLayerAction extends SingletonAction<Settings> {
-  override async onWillAppear(ev: WillAppearEvent<Settings>): Promise<void> {
-    const { layer = 0 } = ev.payload.settings;
-    if (ev.action.isKey()) {
-      await ev.action.setTitle(`Layer ${layer}`);
-    }
-  }
-
-  override async onDidReceiveSettings(ev: DidReceiveSettingsEvent<Settings>): Promise<void> {
-    const { layer = 0 } = ev.payload.settings;
-    if (ev.action.isKey()) {
-      await ev.action.setTitle(`Layer ${layer}`);
-    }
-  }
-
+@action({ UUID: "com.ethanthompson.keymapp-layers.increase-brightness" })
+export class IncreaseBrightnessAction extends SingletonAction<Settings> {
   override async onKeyDown(ev: KeyDownEvent<Settings>): Promise<void> {
-    const { layer = 0, kontrollPath } = ev.payload.settings;
+    const { kontrollPath } = ev.payload.settings;
     const binary = resolveKontroll(kontrollPath);
 
     if (!binary) {
@@ -128,64 +105,47 @@ export class SetLayerAction extends SingletonAction<Settings> {
     }
 
     try {
-      await setLayer(binary, layer);
+      await runBrightnessCommand(binary, "increase-brightness");
       if (ev.action.isKey()) await ev.action.showOk();
     } catch (err) {
-      streamDeck.logger.error(`Layer ${layer} failed: ${friendlyError(err)}`);
+      streamDeck.logger.error(`Increase brightness failed: ${friendlyError(err)}`);
       await ev.action.showAlert();
     }
   }
 
   override async onSendToPlugin(ev: SendToPluginEvent<JsonValue, Settings>): Promise<void> {
-    const payload = ev.payload as {
-      event?: string;
-      layer?: number;
-      kontrollPath?: string;
-    };
-
+    const payload = ev.payload as { event?: string; kontrollPath?: string };
     if (payload.event === "settingsUpdated") {
-      const { layer = 0, kontrollPath } = payload;
-      await ev.action.setSettings({ layer, kontrollPath });
-      if (ev.action.isKey()) {
-        await ev.action.setTitle(`Layer ${layer}`);
-      }
-    }
-
-    if (payload.event === "testConnection") {
-      await this.runConnectionTest(ev.payload as { kontrollPath?: string });
+      await ev.action.setSettings({ kontrollPath: payload.kontrollPath });
     }
   }
+}
 
-  private async runConnectionTest(payload: { kontrollPath?: string }): Promise<void> {
-    const binary = resolveKontroll(payload.kontrollPath);
+@action({ UUID: "com.ethanthompson.keymapp-layers.decrease-brightness" })
+export class DecreaseBrightnessAction extends SingletonAction<Settings> {
+  override async onKeyDown(ev: KeyDownEvent<Settings>): Promise<void> {
+    const { kontrollPath } = ev.payload.settings;
+    const binary = resolveKontroll(kontrollPath);
 
     if (!binary) {
-      await streamDeck.ui.sendToPropertyInspector({
-        event: "testResult",
-        ok: false,
-        message: "kontroll binary not found. Try reinstalling the plugin.",
-      });
+      streamDeck.logger.error("kontroll binary not found.");
+      await ev.action.showAlert();
       return;
     }
 
     try {
-      // `status` is a lightweight call that only needs Keymapp running — no keyboard required.
-      const { stdout } = await execFileAsync(binary, ["status", "--json"], {
-        timeout: KONTROLL_TIMEOUT_MS,
-      });
-      const parsed = JSON.parse(stdout || "{}");
-      const version = parsed.keymapp_version ?? parsed.version ?? "unknown";
-      await streamDeck.ui.sendToPropertyInspector({
-        event: "testResult",
-        ok: true,
-        message: `Connected to Keymapp ${version}.`,
-      });
+      await runBrightnessCommand(binary, "decrease-brightness");
+      if (ev.action.isKey()) await ev.action.showOk();
     } catch (err) {
-      await streamDeck.ui.sendToPropertyInspector({
-        event: "testResult",
-        ok: false,
-        message: friendlyError(err),
-      });
+      streamDeck.logger.error(`Decrease brightness failed: ${friendlyError(err)}`);
+      await ev.action.showAlert();
+    }
+  }
+
+  override async onSendToPlugin(ev: SendToPluginEvent<JsonValue, Settings>): Promise<void> {
+    const payload = ev.payload as { event?: string; kontrollPath?: string };
+    if (payload.event === "settingsUpdated") {
+      await ev.action.setSettings({ kontrollPath: payload.kontrollPath });
     }
   }
 }
