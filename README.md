@@ -1,12 +1,21 @@
 # Keymapp Deck
 
-A Stream Deck plugin that lets you switch your ZSA keyboard to any layer with a single button press.
+A Stream Deck plugin for controlling your ZSA keyboard — switch layers, adjust backlight brightness, and set RGB colors, all with a single button press.
 
 ## What it does
 
-Each Stream Deck key can be configured to activate a specific layer on your ZSA keyboard (Moonlander, Voyager, ErgoDox EZ, etc.). Press the key, the layer switches instantly. The key label updates to show which layer it's assigned to.
+Each Stream Deck key can be configured to control your ZSA keyboard (Moonlander, Voyager, ErgoDox EZ, etc.). Press a key and the action happens instantly.
 
 ![keymapp-deck](keymapp-deck.png)
+
+### Available actions
+
+| Action | Description |
+|---|---|
+| **Set Layer** | Switch your keyboard to a specific layer (0-indexed). The key label updates to show the assigned layer. |
+| **Increase Brightness** | Step up the keyboard backlight brightness. |
+| **Decrease Brightness** | Step down the keyboard backlight brightness. |
+| **Set RGB (All Keys)** | Set every key on the keyboard to a chosen color. Pick from a color swatch or enter a hex value. |
 
 ## Requirements
 
@@ -32,21 +41,29 @@ Download the `.streamDeckPlugin` file from [Releases](../../releases) and double
 
 1. Open Stream Deck.
 2. Find **Keymapp Deck** in the action list on the right.
-3. Drag **Set Layer** onto any key.
-4. In the settings panel, set the **Layer** number (0-indexed, matching your Keymapp layout).
-5. Press the key — your keyboard switches to that layer.
+3. Drag any action onto a key.
+4. Configure it in the settings panel:
+   - **Set Layer** — enter the layer number (0-indexed, matching your Keymapp layout).
+   - **Set RGB (All Keys)** — pick a color from the swatch or type a hex value.
+   - **Increase / Decrease Brightness** — no configuration needed, just press.
+5. Press the key — the action fires instantly.
 
-You can add as many keys as you have layers, giving you a dedicated button for each.
+You can mix and match actions across as many keys as you like.
 
 ## How it works
 
-The plugin communicates with Keymapp through its local gRPC API using the bundled [`kontroll`](https://github.com/zsa/kontroll) CLI binary. No separate installation of `kontroll` is needed — it's included in the plugin bundle. When you press a Stream Deck key, the plugin runs `kontroll set-layer --index N` in the background.
+The plugin communicates with Keymapp through its local gRPC API using the bundled [`kontroll`](https://github.com/zsa/kontroll) CLI binary. No separate installation of `kontroll` is needed — it's included in the plugin bundle. When you press a Stream Deck key, the plugin runs the appropriate `kontroll` command in the background:
 
-The Keymapp API must be running for layer switching to work. If Keymapp is closed or the API is disabled, the Stream Deck key will flash an alert instead of switching.
+- `kontroll set-layer --index N`
+- `kontroll increase-brightness`
+- `kontroll decrease-brightness`
+- `kontroll set-rgb-all --color RRGGBB`
+
+The Keymapp API must be running for any action to work. If Keymapp is closed or the API is disabled, the Stream Deck key will flash an alert instead.
 
 ## Gotchas
 
-- **Keymapp must be open** whenever you want to use the plugin. The Stream Deck key will show an alert (⚠) if Keymapp isn't reachable.
+- **Keymapp must be open** whenever you want to use the plugin. Keys will show an alert (⚠) if Keymapp isn't reachable.
 - **Enable the API in Keymapp** before use: Keymapp → Settings → Enable API. This is a one-time setup.
 - **Layer numbers are 0-indexed.** Layer 1 in Keymapp's UI is layer `0` here, layer 2 is `1`, and so on.
 - **macOS first-launch warning** — see Installation above.
@@ -54,7 +71,7 @@ The Keymapp API must be running for layer switching to work. If Keymapp is close
 
 ## Advanced
 
-In the Stream Deck property inspector for each key, there's an **Advanced** section with a **CLI path** field. Leave it blank to use the bundled binary. Set it to a custom path if you want to use a specific version of `kontroll` you've installed yourself.
+Each action's settings panel has an **Advanced** section with a **CLI path** field. Leave it blank to use the bundled binary. Set it to a custom path if you want to use a specific version of `kontroll` you've installed yourself.
 
 ## Building from source
 
